@@ -1,0 +1,25 @@
+# Configuration sensible
+config.py
+
+# Environnement
+venv/
+env/
+*.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Logs et données
+*.log
+state.json
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

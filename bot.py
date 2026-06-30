@@ -41,7 +41,11 @@ async def ask_cloudflare(user_message):
     }
     async with aiohttp.ClientSession() as session:
         async with session.post(url, headers=headers, json=payload) as resp:
+            print(f"Cloudflare status: {resp.status}")
             data = await resp.json()
+            print(f"Cloudflare response: {data}")
+            if not data.get("success"):
+                raise Exception(f"Cloudflare error: {data.get('errors')}")
             return data["result"]["response"]
 
 def touch(uid):

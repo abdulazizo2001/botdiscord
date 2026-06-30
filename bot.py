@@ -45,8 +45,11 @@ async def ask_cloudflare(user_message):
             data = await resp.json()
             print(f"Cloudflare response: {data}")
             if not data.get("success"):
-                raise Exception(f"Cloudflare error: {data.get('errors')}")
-            return data["result"]["response"]
+                raise Exception(f"Cloudflare errors: {data.get('errors')}")
+            result = data.get("result")
+            if not result:
+                raise Exception(f"Result vide: {data}")
+            return result.get("response") or str(result)
 
 def touch(uid):
     last_activity[uid] = now()

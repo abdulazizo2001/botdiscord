@@ -1,10 +1,11 @@
 
 import asyncio
 import time
+import aiohttp
 import discord
 from discord.ext import commands
 
-from config import DISCORD_TOKEN, COMMAND_PREFIX, STATE_FILE, INACTIVITY_MINUTES, MOD_LOG_CHANNEL_ID
+from config import DISCORD_TOKEN, COMMAND_PREFIX, STATE_FILE, INACTIVITY_MINUTES, MOD_LOG_CHANNEL_ID, CF_ACCOUNT_ID, CF_API_TOKEN
 from data_structures import LinkedList, Stack
 from conversation import build_conversation_tree, search_topic
 from persistence import save_state, load_state
@@ -28,6 +29,20 @@ root, nodes = build_conversation_tree()
 
 def now():
     return int(time.time())
+
+async def ask_cloudflare(user_message):
+    url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct"
+    headers = {"Authorization": f"Bearer {CF_API_TOKEN}"}
+    payload = {
+        "messages": [
+            {"role": "system", "content": "Tu es un assistant Discord sympa et serviable. Réponds toujours en français, de façon courte et naturelle."},
+            {"role": "user", "content": user_message}
+        ]
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=payload) as resp:
+            data = await resp.json()
+            return data["result"]["response"]
 
 def touch(uid):
     last_activity[uid] = now()
@@ -157,11 +172,13 @@ async def on_message(message):
 
     node_id = user_positions.get(uid)
 
-    # Auto-démarrage : répond à n'importe quel message
+    # Réponse IA pour les messages normaux (hors commandes et hors arbre actif)
     if not node_id and not message.content.startswith(COMMAND_PREFIX):
-        user_positions[uid] = root.id
-        user_undo_stacks.setdefault(uid, Stack()).clear()
-        await message.channel.send(root.prompt)
+        try:
+            response = await ask_cloudflare(message.content)
+            await message.channel.send(response)
+        except Exception:
+            await message.channel.send("Désolé, je n'ai pas pu répondre pour le moment.")
         touch(uid)
         return
 

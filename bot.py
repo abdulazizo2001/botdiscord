@@ -179,8 +179,9 @@ async def on_message(message):
         if uid not in welcomed_users:
             welcomed_users.add(uid)
             await message.channel.send(
-                f"Bienvenue {message.author.display_name} ! Je suis **Azizbot**, ton assistant. "
-                f"Pose-moi n'importe quelle question, je suis là pour t'aider !"
+                "Salut ! Ravi de vous voir par ici. 👋\n"
+                "Je suis Azizbot et je suis là pour répondre à vos questions ou vous guider dans vos recherches. "
+                "Que puis-je faire pour vous rendre service aujourd'hui ?"
             )
         try:
             response = await ask_mistral(message.content)

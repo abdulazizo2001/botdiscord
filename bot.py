@@ -156,6 +156,15 @@ async def on_message(message):
 
 
     node_id = user_positions.get(uid)
+
+    # Auto-démarrage : répond à n'importe quel message
+    if not node_id and not message.content.startswith(COMMAND_PREFIX):
+        user_positions[uid] = root.id
+        user_undo_stacks.setdefault(uid, Stack()).clear()
+        await message.channel.send(root.prompt)
+        touch(uid)
+        return
+
     if node_id:
         current = nodes[node_id]
         if current.conclusion:

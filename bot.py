@@ -26,6 +26,7 @@ user_undo_stacks = {}    # uid -> Stack d'ids de nœuds pour undo
 last_activity = {}       # uid -> timestamp (seconds)
 
 root, nodes = build_conversation_tree()
+welcomed_users = set()
 
 def now():
     return int(time.time())
@@ -175,6 +176,12 @@ async def on_message(message):
 
     # Réponse IA pour les messages normaux (hors commandes et hors arbre actif)
     if not node_id and not message.content.startswith(COMMAND_PREFIX):
+        if uid not in welcomed_users:
+            welcomed_users.add(uid)
+            await message.channel.send(
+                f"Bienvenue {message.author.display_name} ! Je suis **Azizbot**, ton assistant. "
+                f"Pose-moi n'importe quelle question, je suis là pour t'aider !"
+            )
         try:
             response = await ask_mistral(message.content)
             await message.channel.send(response)

@@ -5,7 +5,7 @@ import aiohttp
 import discord
 from discord.ext import commands
 
-from config import DISCORD_TOKEN, COMMAND_PREFIX, STATE_FILE, INACTIVITY_MINUTES, MOD_LOG_CHANNEL_ID, CF_ACCOUNT_ID, CF_API_TOKEN
+from config import DISCORD_TOKEN, COMMAND_PREFIX, STATE_FILE, INACTIVITY_MINUTES, MOD_LOG_CHANNEL_ID, MISTRAL_API_KEY
 from data_structures import LinkedList, Stack
 from conversation import build_conversation_tree, search_topic
 from persistence import save_state, load_state
@@ -30,10 +30,11 @@ root, nodes = build_conversation_tree()
 def now():
     return int(time.time())
 
-async def ask_cloudflare(user_message):
-    url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct"
-    headers = {"Authorization": f"Bearer {CF_API_TOKEN}"}
+async def ask_mistral(user_message):
+    url = "https://api.mistral.ai/v1/chat/completions"
+    headers = {"Authorization": f"Bearer {MISTRAL_API_KEY}", "Content-Type": "application/json"}
     payload = {
+        "model": "mistral-small-latest",
         "messages": [
             {"role": "system", "content": "Tu es un assistant Discord sympa et serviable. Réponds toujours en français, de façon courte et naturelle."},
             {"role": "user", "content": user_message}
@@ -41,15 +42,8 @@ async def ask_cloudflare(user_message):
     }
     async with aiohttp.ClientSession() as session:
         async with session.post(url, headers=headers, json=payload) as resp:
-            print(f"Cloudflare status: {resp.status}")
             data = await resp.json()
-            print(f"Cloudflare response: {data}")
-            if not data.get("success"):
-                raise Exception(f"Cloudflare errors: {data.get('errors')}")
-            result = data.get("result")
-            if not result:
-                raise Exception(f"Result vide: {data}")
-            return result.get("response") or str(result)
+            return data["choices"][0]["message"]["content"]
 
 def touch(uid):
     last_activity[uid] = now()
@@ -182,10 +176,10 @@ async def on_message(message):
     # Réponse IA pour les messages normaux (hors commandes et hors arbre actif)
     if not node_id and not message.content.startswith(COMMAND_PREFIX):
         try:
-            response = await ask_cloudflare(message.content)
+            response = await ask_mistral(message.content)
             await message.channel.send(response)
         except Exception as e:
-            print(f"Erreur Cloudflare: {e}")
+            print(f"Erreur Mistral: {e}")
             await message.channel.send("Désolé, je n'ai pas pu répondre pour le moment.")
         touch(uid)
         return

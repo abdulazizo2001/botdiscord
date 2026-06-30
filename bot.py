@@ -177,7 +177,8 @@ async def on_message(message):
         try:
             response = await ask_cloudflare(message.content)
             await message.channel.send(response)
-        except Exception:
+        except Exception as e:
+            print(f"Erreur Cloudflare: {e}")
             await message.channel.send("Désolé, je n'ai pas pu répondre pour le moment.")
         touch(uid)
         return
